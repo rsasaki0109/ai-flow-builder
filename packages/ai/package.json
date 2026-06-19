@@ -1,0 +1,21 @@
+{
+  "name": "@ai-flow-builder/ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts",
+    "test:unit": "vitest run --config ../../vitest.config.ts"
+  },
+  "dependencies": {
+    "@ai-flow-builder/flow-core": "workspace:*"
+  }
+}
