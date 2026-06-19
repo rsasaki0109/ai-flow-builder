@@ -1,5 +1,11 @@
 # AI Flow Builder
 
+<p align="center">
+  <a href="https://rsasaki0109.github.io/ai-flow-builder/">
+    <img src="docs/assets/demo.gif" alt="AI Flow Builder demo showing prompt-based flow planning, validated execution, and deterministic TypeScript output" width="900" />
+  </a>
+</p>
+
 AI Flow Builder is a web-first visual programming platform for building small AI and text-processing flows. The MVP centers every feature on a shared Flow IR, so the editor, validation, execution engine, AI planning pipeline, persistence, and future code generation all work against the same domain model instead of React Flow internals.
 
 This repository is in active MVP development. It is intended for local development and trusted single-user deployments while the v0.1.0 feature set is being completed.
