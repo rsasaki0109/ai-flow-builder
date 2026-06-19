@@ -4,6 +4,14 @@ AI Flow Builder is a web-first visual programming platform for building small AI
 
 This repository is in active MVP development. It is intended for local development and trusted single-user deployments while the v0.1.0 feature set is being completed.
 
+## Play Online
+
+A static GitHub Pages playground is available at:
+
+https://rsasaki0109.github.io/ai-flow-builder/
+
+The playground runs fully in the browser with a fake AI provider. It does not use the Next.js API, SQLite persistence, OpenAI, or server-side execution.
+
 ## MVP Scope
 
 The target MVP supports:

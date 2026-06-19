@@ -1,0 +1,1089 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Flow Builder Playground</title>
+    <meta
+      name="description"
+      content="A static GitHub Pages playground for AI Flow Builder."
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f8fb;
+        --surface: #ffffff;
+        --surface-2: #eef3f8;
+        --ink: #18202b;
+        --muted: #617085;
+        --line: #d8e0ea;
+        --blue: #2563eb;
+        --green: #11845b;
+        --amber: #a15c00;
+        --red: #c2413d;
+        --violet: #6d5bd0;
+        --shadow: 0 16px 50px rgba(22, 32, 48, 0.11);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 1024px;
+        background: var(--bg);
+        color: var(--ink);
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        min-height: 36px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--ink);
+        cursor: pointer;
+        font-weight: 650;
+      }
+
+      button:hover {
+        border-color: #9caabe;
+      }
+
+      button.primary {
+        border-color: var(--blue);
+        background: var(--blue);
+        color: #ffffff;
+      }
+
+      button.ghost {
+        background: transparent;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(14px);
+        position: sticky;
+        top: 0;
+        z-index: 20;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 300px;
+      }
+
+      .brand-mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 7px;
+        display: grid;
+        place-items: center;
+        background: #152033;
+      }
+
+      .brand-mark svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 17px;
+        line-height: 1.2;
+      }
+
+      .brand p {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .actions a {
+        color: var(--blue);
+        font-weight: 650;
+        text-decoration: none;
+        padding: 8px 10px;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: 280px minmax(520px, 1fr) 360px;
+        min-height: calc(100vh - 71px);
+      }
+
+      .panel {
+        border-right: 1px solid var(--line);
+        background: var(--surface);
+        min-height: 0;
+        overflow: auto;
+      }
+
+      .panel.right {
+        border-right: 0;
+        border-left: 1px solid var(--line);
+      }
+
+      .panel-inner {
+        padding: 18px;
+      }
+
+      .panel h2,
+      .panel h3 {
+        margin: 0 0 12px;
+        font-size: 14px;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .small {
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .palette {
+        display: grid;
+        gap: 10px;
+      }
+
+      .palette-item {
+        display: grid;
+        grid-template-columns: 36px 1fr;
+        gap: 10px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+      }
+
+      .palette-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 7px;
+        display: grid;
+        place-items: center;
+        color: #ffffff;
+        font-weight: 800;
+      }
+
+      .palette-icon.input {
+        background: var(--green);
+      }
+
+      .palette-icon.template {
+        background: var(--amber);
+      }
+
+      .palette-icon.ai {
+        background: var(--violet);
+      }
+
+      .palette-icon.output {
+        background: var(--blue);
+      }
+
+      .palette-title {
+        font-weight: 750;
+        font-size: 13px;
+      }
+
+      .palette-copy {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .canvas-wrap {
+        position: relative;
+        min-height: 0;
+        overflow: hidden;
+        background:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px), #f9fbfd;
+        background-size: 32px 32px;
+      }
+
+      .canvas-header {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        top: 16px;
+        z-index: 5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 30px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.92);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .badge.ok {
+        border-color: #8ecab2;
+        color: var(--green);
+      }
+
+      .badge.warn {
+        border-color: #deb36c;
+        color: var(--amber);
+      }
+
+      .graph {
+        position: absolute;
+        inset: 72px 26px 26px;
+        min-height: 520px;
+      }
+
+      .edges {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        pointer-events: none;
+      }
+
+      .edge-path {
+        fill: none;
+        stroke: #8a9ab0;
+        stroke-width: 2.5;
+      }
+
+      .edge-path.active {
+        stroke: var(--blue);
+      }
+
+      .node {
+        position: absolute;
+        width: 180px;
+        min-height: 112px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .node[data-kind="input"] {
+        left: 0;
+        top: 80px;
+      }
+
+      .node[data-kind="template"] {
+        left: calc(33% - 90px);
+        top: 80px;
+      }
+
+      .node[data-kind="ai"] {
+        left: calc(66% - 90px);
+        top: 80px;
+      }
+
+      .node[data-kind="output"] {
+        right: 0;
+        top: 80px;
+      }
+
+      .node-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .node-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--muted);
+      }
+
+      .node[data-kind="input"] .dot {
+        background: var(--green);
+      }
+
+      .node[data-kind="template"] .dot {
+        background: var(--amber);
+      }
+
+      .node[data-kind="ai"] .dot {
+        background: var(--violet);
+      }
+
+      .node[data-kind="output"] .dot {
+        background: var(--blue);
+      }
+
+      .node-status {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 750;
+      }
+
+      .node-body {
+        padding: 10px 12px 12px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .preview {
+        margin-top: 8px;
+        padding: 8px;
+        border-radius: 6px;
+        background: var(--surface-2);
+        color: var(--ink);
+        min-height: 34px;
+        max-height: 70px;
+        overflow: hidden;
+        word-break: break-word;
+      }
+
+      .port {
+        position: absolute;
+        top: 54px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid #ffffff;
+        background: #718096;
+        box-shadow: 0 0 0 1px #718096;
+      }
+
+      .port.in {
+        left: -6px;
+      }
+
+      .port.out {
+        right: -6px;
+      }
+
+      label {
+        display: block;
+        margin: 14px 0 6px;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      textarea,
+      input[type="text"] {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 10px 11px;
+        color: var(--ink);
+        background: #fbfcfe;
+        resize: vertical;
+      }
+
+      textarea {
+        min-height: 92px;
+      }
+
+      textarea:focus,
+      input[type="text"]:focus {
+        outline: 2px solid rgba(37, 99, 235, 0.22);
+        border-color: var(--blue);
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 14px 0;
+        padding: 10px 0;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .toggle-row input {
+        width: 18px;
+        height: 18px;
+      }
+
+      .button-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .button-grid .wide {
+        grid-column: 1 / -1;
+      }
+
+      .result-box,
+      .problems,
+      .json-box {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+      }
+
+      .result-box {
+        min-height: 112px;
+        padding: 12px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .problems {
+        margin-top: 14px;
+        padding: 10px 12px;
+      }
+
+      .problem {
+        margin: 0 0 8px;
+        color: var(--red);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .problem:last-child {
+        margin-bottom: 0;
+      }
+
+      .json-box {
+        margin-top: 14px;
+        padding: 10px;
+        max-height: 180px;
+        overflow: auto;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        white-space: pre;
+      }
+
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 18px;
+        border-top: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .footer a {
+        color: var(--blue);
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 64 64" role="img">
+              <path
+                d="M14 18h14v10H14V18Zm22 0h14v10H36V18ZM14 38h14v10H14V38Zm22 0h14v10H36V38Z"
+                fill="#fff"
+              />
+              <path
+                d="M28 23h8M21 28v10m22-10v10M28 43h8"
+                stroke="#7dd3fc"
+                stroke-width="4"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+          <div>
+            <h1>AI Flow Builder Playground</h1>
+            <p>Static GitHub Pages demo with local Fake AI execution</p>
+          </div>
+        </div>
+        <div class="actions">
+          <span id="saveStatus" class="badge">Saved locally</span>
+          <a href="https://github.com/rsasaki0109/ai-flow-builder">GitHub</a>
+        </div>
+      </header>
+
+      <section class="workspace" aria-label="AI Flow Builder static demo">
+        <aside class="panel">
+          <div class="panel-inner">
+            <h2>Node Palette</h2>
+            <div class="palette" aria-label="Available nodes">
+              <div class="palette-item">
+                <div class="palette-icon input">I</div>
+                <div>
+                  <div class="palette-title">Text Input</div>
+                  <div class="palette-copy">Runtime text value</div>
+                </div>
+              </div>
+              <div class="palette-item">
+                <div class="palette-icon template">T</div>
+                <div>
+                  <div class="palette-title">Text Template</div>
+                  <div class="palette-copy">Supports only {{input}}</div>
+                </div>
+              </div>
+              <div class="palette-item">
+                <div class="palette-icon ai">AI</div>
+                <div>
+                  <div class="palette-title">AI Generate</div>
+                  <div class="palette-copy">Fake provider in this demo</div>
+                </div>
+              </div>
+              <div class="palette-item">
+                <div class="palette-icon output">O</div>
+                <div>
+                  <div class="palette-title">Text Output</div>
+                  <div class="palette-copy">Final result</div>
+                </div>
+              </div>
+            </div>
+
+            <h3 style="margin-top: 24px">Demo Mode</h3>
+            <p class="small muted">
+              This page runs fully in the browser. It does not call the Next.js
+              API, SQLite, OpenAI, or any external service.
+            </p>
+            <div class="button-grid">
+              <button id="loadSummarizer" type="button">Summarizer</button>
+              <button id="loadEcho" type="button">Echo</button>
+              <button id="copyFlow" type="button">Copy IR</button>
+              <button id="downloadFlow" type="button">Download</button>
+            </div>
+          </div>
+        </aside>
+
+        <section class="canvas-wrap" aria-label="Flow canvas">
+          <div class="canvas-header">
+            <span id="validationBadge" class="badge ok">Executable</span>
+            <span class="badge">Input -> Template -> AI -> Output</span>
+          </div>
+
+          <div class="graph" id="graph">
+            <svg class="edges" aria-hidden="true">
+              <path id="edge1" class="edge-path active" />
+              <path id="edge2" class="edge-path active" />
+              <path id="edge3" class="edge-path active" />
+            </svg>
+
+            <article class="node" data-kind="input">
+              <span class="port out" aria-hidden="true"></span>
+              <div class="node-head">
+                <div class="node-title">
+                  <span class="dot"></span>Text Input
+                </div>
+                <div class="node-status" id="inputStatus">idle</div>
+              </div>
+              <div class="node-body">
+                key: input
+                <div class="preview" id="inputPreview"></div>
+              </div>
+            </article>
+
+            <article class="node" data-kind="template">
+              <span class="port in" aria-hidden="true"></span>
+              <span class="port out" aria-hidden="true"></span>
+              <div class="node-head">
+                <div class="node-title">
+                  <span class="dot"></span>Text Template
+                </div>
+                <div class="node-status" id="templateStatus">idle</div>
+              </div>
+              <div class="node-body">
+                placeholder: {{input}}
+                <div class="preview" id="templatePreview"></div>
+              </div>
+            </article>
+
+            <article class="node" data-kind="ai" id="aiNode">
+              <span class="port in" aria-hidden="true"></span>
+              <span class="port out" aria-hidden="true"></span>
+              <div class="node-head">
+                <div class="node-title">
+                  <span class="dot"></span>AI Generate
+                </div>
+                <div class="node-status" id="aiStatus">idle</div>
+              </div>
+              <div class="node-body">
+                provider: fake
+                <div class="preview" id="aiPreview"></div>
+              </div>
+            </article>
+
+            <article class="node" data-kind="output">
+              <span class="port in" aria-hidden="true"></span>
+              <div class="node-head">
+                <div class="node-title">
+                  <span class="dot"></span>Text Output
+                </div>
+                <div class="node-status" id="outputStatus">idle</div>
+              </div>
+              <div class="node-body">
+                key: result
+                <div class="preview" id="outputPreview"></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <aside class="panel right">
+          <div class="panel-inner">
+            <h2>Run Flow</h2>
+            <label for="inputText">Text input</label>
+            <textarea id="inputText" spellcheck="true"></textarea>
+
+            <label for="templateText">Template</label>
+            <textarea id="templateText" spellcheck="false"></textarea>
+
+            <div class="toggle-row">
+              <div>
+                <strong>Fake AI node</strong>
+                <div class="small muted">Prepends FAKE_AI to the prompt</div>
+              </div>
+              <input id="useAi" type="checkbox" checked />
+            </div>
+
+            <button id="runFlow" class="primary" type="button">Run Flow</button>
+
+            <h3 style="margin-top: 20px">Output</h3>
+            <div id="result" class="result-box" aria-live="polite"></div>
+
+            <div id="problems" class="problems" aria-live="polite"></div>
+
+            <h3 style="margin-top: 20px">Flow IR Preview</h3>
+            <pre id="flowJson" class="json-box"></pre>
+          </div>
+        </aside>
+      </section>
+
+      <footer class="footer">
+        <span>
+          Static playground for GitHub Pages. Full MVP requires the local
+          Next.js app.
+        </span>
+        <a href="https://github.com/rsasaki0109/ai-flow-builder#quick-start">
+          Run the full app locally
+        </a>
+      </footer>
+    </main>
+
+    <script>
+      const storageKey = "ai-flow-builder-pages-demo-v1";
+      const examples = {
+        summarizer: {
+          input:
+            "AI Flow Builder lets developers visually connect text and AI nodes.",
+          template: "Summarize the following in one sentence:\\n{{input}}",
+          useAi: true,
+        },
+        echo: {
+          input: "Hello from GitHub Pages.",
+          template: "Echo: {{input}}",
+          useAi: false,
+        },
+      };
+
+      const elements = {
+        inputText: document.getElementById("inputText"),
+        templateText: document.getElementById("templateText"),
+        useAi: document.getElementById("useAi"),
+        result: document.getElementById("result"),
+        problems: document.getElementById("problems"),
+        flowJson: document.getElementById("flowJson"),
+        validationBadge: document.getElementById("validationBadge"),
+        saveStatus: document.getElementById("saveStatus"),
+        inputPreview: document.getElementById("inputPreview"),
+        templatePreview: document.getElementById("templatePreview"),
+        aiPreview: document.getElementById("aiPreview"),
+        outputPreview: document.getElementById("outputPreview"),
+        inputStatus: document.getElementById("inputStatus"),
+        templateStatus: document.getElementById("templateStatus"),
+        aiStatus: document.getElementById("aiStatus"),
+        outputStatus: document.getElementById("outputStatus"),
+        aiNode: document.getElementById("aiNode"),
+        edge1: document.getElementById("edge1"),
+        edge2: document.getElementById("edge2"),
+        edge3: document.getElementById("edge3"),
+      };
+
+      function initialize() {
+        const stored = loadStoredState();
+        const state = stored ?? examples.summarizer;
+        elements.inputText.value = state.input;
+        elements.templateText.value = state.template;
+        elements.useAi.checked = state.useAi;
+        update();
+      }
+
+      function loadStoredState() {
+        try {
+          const value = window.localStorage.getItem(storageKey);
+          return value === null ? null : JSON.parse(value);
+        } catch {
+          return null;
+        }
+      }
+
+      function readState() {
+        return {
+          input: elements.inputText.value,
+          template: elements.templateText.value,
+          useAi: elements.useAi.checked,
+        };
+      }
+
+      function persistState(state) {
+        window.localStorage.setItem(storageKey, JSON.stringify(state));
+        elements.saveStatus.textContent = "Saved locally";
+      }
+
+      function validate(state) {
+        const issues = [];
+
+        if (state.input.trim().length === 0) {
+          issues.push("Text Input is required.");
+        }
+
+        if (state.template.trim().length === 0) {
+          issues.push("Text Template cannot be empty.");
+        }
+
+        const placeholders = Array.from(
+          state.template.matchAll(/{{\\s*([^}]+?)\\s*}}/g),
+        ).map((match) => match[1]);
+        const unknown = placeholders.filter((name) => name !== "input");
+
+        for (const name of unknown) {
+          issues.push(`Unknown template placeholder: {{${name}}}.`);
+        }
+
+        return issues;
+      }
+
+      function execute(state) {
+        const prompt = state.template.replaceAll("{{input}}", state.input);
+        const output = state.useAi ? `FAKE_AI: ${prompt}` : prompt;
+
+        return {
+          input: state.input,
+          prompt,
+          ai: state.useAi ? output : "",
+          output,
+        };
+      }
+
+      function toFlowIr(state) {
+        const nodes = [
+          {
+            id: "demo-input",
+            kind: "core.input.text",
+            specVersion: 1,
+            position: { x: 0, y: 80 },
+            label: "Text Input",
+            config: { key: "input", label: "Input", required: true },
+          },
+          {
+            id: "demo-template",
+            kind: "core.text.template",
+            specVersion: 1,
+            position: { x: 300, y: 80 },
+            label: "Text Template",
+            config: { template: state.template },
+          },
+        ];
+        const edges = [
+          {
+            id: "edge-input-template",
+            source: { nodeId: "demo-input", portId: "value" },
+            target: { nodeId: "demo-template", portId: "input" },
+          },
+        ];
+
+        if (state.useAi) {
+          nodes.push({
+            id: "demo-ai",
+            kind: "ai.text.generate",
+            specVersion: 1,
+            position: { x: 600, y: 80 },
+            label: "AI Generate",
+            config: {},
+          });
+          edges.push(
+            {
+              id: "edge-template-ai",
+              source: { nodeId: "demo-template", portId: "text" },
+              target: { nodeId: "demo-ai", portId: "prompt" },
+            },
+            {
+              id: "edge-ai-output",
+              source: { nodeId: "demo-ai", portId: "text" },
+              target: { nodeId: "demo-output", portId: "value" },
+            },
+          );
+        } else {
+          edges.push({
+            id: "edge-template-output",
+            source: { nodeId: "demo-template", portId: "text" },
+            target: { nodeId: "demo-output", portId: "value" },
+          });
+        }
+
+        nodes.push({
+          id: "demo-output",
+          kind: "core.output.text",
+          specVersion: 1,
+          position: { x: 900, y: 80 },
+          label: "Text Output",
+          config: { key: "result", label: "Result" },
+        });
+
+        return {
+          schemaVersion: 1,
+          nodes,
+          edges,
+          viewport: { x: 0, y: 0, zoom: 1 },
+        };
+      }
+
+      function update() {
+        const state = readState();
+        const issues = validate(state);
+        const result = issues.length === 0 ? execute(state) : null;
+        const flow = toFlowIr(state);
+
+        persistState(state);
+        renderIssues(issues);
+        renderResult(result, issues);
+        renderFlow(flow);
+        renderGraph(state, result, issues);
+        drawEdges(state.useAi);
+      }
+
+      function renderIssues(issues) {
+        if (issues.length === 0) {
+          elements.problems.innerHTML =
+            '<p class="small muted">No validation problems.</p>';
+          elements.validationBadge.textContent = "Executable";
+          elements.validationBadge.className = "badge ok";
+          return;
+        }
+
+        elements.problems.innerHTML = issues
+          .map((issue) => `<p class="problem">${escapeHtml(issue)}</p>`)
+          .join("");
+        elements.validationBadge.textContent = `${issues.length} problem${
+          issues.length === 1 ? "" : "s"
+        }`;
+        elements.validationBadge.className = "badge warn";
+      }
+
+      function renderResult(result, issues) {
+        if (issues.length > 0 || result === null) {
+          elements.result.textContent = "Fix validation problems to run.";
+          return;
+        }
+
+        elements.result.textContent = result.output;
+      }
+
+      function renderFlow(flow) {
+        elements.flowJson.textContent = JSON.stringify(flow, null, 2);
+      }
+
+      function renderGraph(state, result, issues) {
+        const active = issues.length === 0 && result !== null;
+        elements.aiNode.style.opacity = state.useAi ? "1" : "0.38";
+
+        elements.inputStatus.textContent = active ? "done" : "idle";
+        elements.templateStatus.textContent = active ? "done" : "idle";
+        elements.aiStatus.textContent = state.useAi
+          ? active
+            ? "done"
+            : "idle"
+          : "skipped";
+        elements.outputStatus.textContent = active ? "done" : "idle";
+
+        elements.inputPreview.textContent = preview(state.input);
+        elements.templatePreview.textContent = result
+          ? preview(result.prompt)
+          : "";
+        elements.aiPreview.textContent =
+          result && state.useAi ? preview(result.ai) : "";
+        elements.outputPreview.textContent = result
+          ? preview(result.output)
+          : "";
+      }
+
+      function drawEdges(useAi) {
+        const graph = document.getElementById("graph");
+        const bounds = graph.getBoundingClientRect();
+        const nodes = {
+          input: document.querySelector('[data-kind="input"]'),
+          template: document.querySelector('[data-kind="template"]'),
+          ai: document.querySelector('[data-kind="ai"]'),
+          output: document.querySelector('[data-kind="output"]'),
+        };
+
+        setPath(
+          elements.edge1,
+          portPoint(nodes.input, "out", bounds),
+          portPoint(nodes.template, "in", bounds),
+        );
+        setPath(
+          elements.edge2,
+          portPoint(nodes.template, "out", bounds),
+          portPoint(useAi ? nodes.ai : nodes.output, "in", bounds),
+        );
+        setPath(
+          elements.edge3,
+          portPoint(nodes.ai, "out", bounds),
+          portPoint(nodes.output, "in", bounds),
+        );
+        elements.edge3.style.display = useAi ? "block" : "none";
+      }
+
+      function portPoint(node, side, bounds) {
+        const rect = node.getBoundingClientRect();
+        const x =
+          side === "out" ? rect.right - bounds.left : rect.left - bounds.left;
+        const y = rect.top - bounds.top + 54;
+        return { x, y };
+      }
+
+      function setPath(path, start, end) {
+        const distance = Math.max(80, Math.abs(end.x - start.x) * 0.45);
+        path.setAttribute(
+          "d",
+          `M ${start.x} ${start.y} C ${start.x + distance} ${start.y}, ${
+            end.x - distance
+          } ${end.y}, ${end.x} ${end.y}`,
+        );
+      }
+
+      function preview(value) {
+        return value.length > 120 ? `${value.slice(0, 120)}...` : value;
+      }
+
+      function escapeHtml(value) {
+        return value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      async function copyFlow() {
+        const content = elements.flowJson.textContent;
+        await navigator.clipboard.writeText(content);
+        elements.saveStatus.textContent = "Copied Flow IR";
+      }
+
+      function downloadFlow() {
+        const blob = new Blob([elements.flowJson.textContent], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "ai-flow-builder-demo-flow.json";
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function loadExample(example) {
+        elements.inputText.value = example.input;
+        elements.templateText.value = example.template;
+        elements.useAi.checked = example.useAi;
+        update();
+      }
+
+      elements.inputText.addEventListener("input", update);
+      elements.templateText.addEventListener("input", update);
+      elements.useAi.addEventListener("change", update);
+      document.getElementById("runFlow").addEventListener("click", update);
+      document
+        .getElementById("loadSummarizer")
+        .addEventListener("click", () => loadExample(examples.summarizer));
+      document
+        .getElementById("loadEcho")
+        .addEventListener("click", () => loadExample(examples.echo));
+      document.getElementById("copyFlow").addEventListener("click", copyFlow);
+      document
+        .getElementById("downloadFlow")
+        .addEventListener("click", downloadFlow);
+      window.addEventListener("resize", () =>
+        drawEdges(elements.useAi.checked),
+      );
+
+      initialize();
+    </script>
+  </body>
+</html>
