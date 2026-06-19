@@ -11,7 +11,12 @@ import {
   setServerContainerForTest,
   type ServerContainer,
 } from "./container.js";
+import { createAppLogger } from "./logger.js";
 import { FlowService } from "./services/flow-service.js";
+import { GenerateCodeService } from "./services/generate-code-service.js";
+import { GenerateFlowFromTextService } from "./services/generate-flow-service.js";
+import { RunFlowService } from "./services/run-flow-service.js";
+import { FakeAiProvider, type AiProvider } from "@ai-flow-builder/ai";
 
 const tempDirs: string[] = [];
 
@@ -34,14 +39,34 @@ describe("server container", () => {
     expect(container.config).toBe(config);
     expect(container.flowRepository).toBe(flowRepository);
     expect(container.flowService).toBeInstanceOf(FlowService);
+    expect(container.runFlowService).toBeInstanceOf(RunFlowService);
+    expect(container.generateFlowService).toBeInstanceOf(
+      GenerateFlowFromTextService,
+    );
+    expect(container.generateCodeService).toBeInstanceOf(GenerateCodeService);
   });
 
   it("allows tests to replace the singleton container", () => {
     const dispose = vi.fn();
+    const flowRepository = createFakeFlowRepository();
+    const aiProvider = createFakeAiProvider();
+    const textGenerationService = createFakeTextGenerationService();
     const container: ServerContainer = {
       config: createConfig({ databaseUrl: "file::memory:" }),
-      flowRepository: createFakeFlowRepository(),
-      flowService: new FlowService(createFakeFlowRepository()),
+      logger: createAppLogger({ level: "silent" }),
+      flowRepository,
+      aiProvider,
+      flowService: new FlowService(flowRepository),
+      runFlowService: new RunFlowService(flowRepository, {
+        textGenerationService,
+        timeoutMs: 60_000,
+      }),
+      generateFlowService: new GenerateFlowFromTextService({
+        aiProvider,
+        timeoutMs: 45_000,
+      }),
+      generateCodeService: new GenerateCodeService(flowRepository),
+      textGenerationService,
       dispose,
     };
 
@@ -90,4 +115,18 @@ function createFakeFlowRepository(): FlowRepository {
     update: async () => ({ status: "not_found" }),
     delete: async () => false,
   };
+}
+
+function createFakeTextGenerationService() {
+  return {
+    async generateText() {
+      return {
+        text: "fake",
+      };
+    },
+  };
+}
+
+function createFakeAiProvider(): AiProvider {
+  return new FakeAiProvider();
 }

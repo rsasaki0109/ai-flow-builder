@@ -32,6 +32,8 @@ interface MockReactFlowProps {
     event: ReactMouseEvent<HTMLButtonElement>,
     node: ReactFlowNode,
   ) => void;
+  onNodeDragStart?: () => void;
+  onNodeDragStop?: () => void;
   onNodesChange?: (changes: ReactFlowNodeChange[]) => void;
   onPaneClick?: () => void;
 }
@@ -69,6 +71,8 @@ vi.mock("@xyflow/react", () => ({
     onEdgeClick,
     onEdgesChange,
     onNodeClick,
+    onNodeDragStart,
+    onNodeDragStop,
     onNodesChange,
     onPaneClick,
   }: MockReactFlowProps) => {
@@ -125,6 +129,20 @@ vi.mock("@xyflow/react", () => ({
           type="button"
         >
           Move first node
+        </button>
+        <button
+          disabled={firstNode === undefined}
+          onClick={onNodeDragStart}
+          type="button"
+        >
+          Start first node drag
+        </button>
+        <button
+          disabled={firstNode === undefined}
+          onClick={onNodeDragStop}
+          type="button"
+        >
+          Stop first node drag
         </button>
         <button
           disabled={firstEdge === undefined}
@@ -245,6 +263,30 @@ describe("FlowCanvas", () => {
     expect(screen.getByTestId("edge-count").textContent).toBe("0");
   });
 
+  it("coalesces node drag movement into one undo history entry", () => {
+    render(
+      <EditorStoreProvider flow={createFlowResource()}>
+        <FlowCanvas />
+        <GraphProbe />
+        <HistoryProbe />
+      </EditorStoreProvider>,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Start first node drag" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Move first node" }));
+    expect(screen.getByTestId("first-node-position").textContent).toBe(
+      "120,140",
+    );
+    expect(screen.getByTestId("history-past-count").textContent).toBe("0");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Stop first node drag" }),
+    );
+    expect(screen.getByTestId("history-past-count").textContent).toBe("1");
+  });
+
   it("deletes the selected node with the keyboard outside form fields", () => {
     render(
       <EditorStoreProvider flow={createFlowResource()}>
@@ -343,6 +385,12 @@ function GraphProbe() {
       <span data-testid="node-count">{nodeCount}</span>
     </div>
   );
+}
+
+function HistoryProbe() {
+  const pastCount = useEditorStore((store) => store.history.past.length);
+
+  return <span data-testid="history-past-count">{pastCount}</span>;
 }
 
 function createFlowResource({

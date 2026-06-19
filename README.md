@@ -6,9 +6,11 @@
   </a>
 </p>
 
-AI Flow Builder is a web-first visual programming platform for building small AI and text-processing flows. The MVP centers every feature on a shared Flow IR, so the editor, validation, execution engine, AI planning pipeline, persistence, and future code generation all work against the same domain model instead of React Flow internals.
+## What It Is
 
-This repository is in active MVP development. It is intended for local development and trusted single-user deployments while the v0.1.0 feature set is being completed.
+AI Flow Builder is a web-first visual programming platform for building small AI and text-processing flows. You place nodes, connect them, configure inputs and prompts, run the flow, and generate deterministic TypeScript from the same Flow IR.
+
+The MVP is designed for local development and trusted single-user deployments. It intentionally avoids authentication, arbitrary code execution nodes, external HTTP request nodes, distributed workers, and plugin marketplaces.
 
 ## Play Online
 
@@ -18,45 +20,50 @@ https://rsasaki0109.github.io/ai-flow-builder/
 
 The playground runs fully in the browser with a fake AI provider. It does not use the Next.js API, SQLite persistence, OpenAI, or server-side execution.
 
-## MVP Scope
+## MVP Features
 
-The target MVP supports:
-
-- Browser-based flow editing with four built-in node kinds: text input, text template, AI text generation, and text output.
-- Flow storage in SQLite/libSQL through a modular Next.js monolith.
-- Deterministic graph validation with separate storage and executable checks.
-- Server-side flow execution without arbitrary JavaScript, Python, shell, HTTP, or database query nodes.
-- AI-assisted flow planning through a provider abstraction with disabled, fake, and OpenAI adapters.
-- Deterministic TypeScript code generation from Flow IR in a later MVP task.
-
-Current implementation status:
-
-- Core Flow IR, node specs, validation, layout, persistence, CRUD APIs, editor shell, inspector, autosave, conflict handling, execution engine, run API/panel, AI provider abstraction, OpenAI adapter, and FlowPlan schema/prompt foundations are implemented.
-- Code generation UI/API, AI generation service/UI, final E2E suite, Docker packaging, and full OSS docs are still in progress.
-
-## Tech Stack
-
-- Node.js 24 and pnpm 11
-- TypeScript with strict compiler settings
-- Next.js App Router and React
-- React Flow via `@xyflow/react`
-- Zustand for editor state
-- Zod for domain, API, AI, and config validation
-- Drizzle ORM with SQLite/libSQL
-- Vitest for unit and integration tests
-- OpenAI official TypeScript SDK behind an adapter boundary
+- Browser-based visual editor with Text Input, Text Template, AI Generate, and Text Output nodes.
+- Shared Flow IR used by the editor, validation, execution engine, AI planning, persistence, and code generation.
+- SQLite/libSQL persistence through a modular Next.js monolith.
+- Storage validation and executable validation with deterministic graph checks.
+- Server-side sequential DAG execution with node-level trace output.
+- AI-assisted flow planning through disabled, fake, and OpenAI provider adapters.
+- Deterministic TypeScript code generation with copy and download support.
+- Docker image with a persistent `/app/data` volume.
+- Static GitHub Pages playground for trying the interaction model without a server.
 
 ## Quick Start
 
 ```bash
 corepack enable
 pnpm install --frozen-lockfile
+cp .env.example .env
+pnpm db:migrate
 pnpm dev
 ```
 
 Open `http://localhost:3000`.
 
 The default configuration runs with AI disabled and stores data in `./data/ai-flow-builder.db`.
+
+## Docker
+
+Build and run with a persistent named volume:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:3000`.
+
+The container stores SQLite data in `/app/data`, mounted from the `ai-flow-builder-data` volume. Stopping and starting the service keeps saved flows:
+
+```bash
+docker compose down
+docker compose up
+```
+
+The image runs database migrations before starting the web server and exposes `/api/health` as its healthcheck.
 
 ## Environment
 
@@ -80,6 +87,12 @@ For deterministic local or CI AI behavior:
 AI_PROVIDER=fake pnpm dev
 ```
 
+## AI Privacy
+
+AI features are optional. With `AI_PROVIDER=disabled`, the application does not call an external AI provider. With `AI_PROVIDER=fake`, AI behavior is deterministic and local.
+
+When `AI_PROVIDER=openai`, flow-generation prompts and AI node prompts are sent to the configured provider. API keys are server-only, are never exposed through `NEXT_PUBLIC_*`, and are redacted from logs.
+
 ## Quality Checks
 
 ```bash
@@ -89,9 +102,8 @@ pnpm typecheck
 pnpm test
 pnpm check
 pnpm --filter @ai-flow-builder/web build
+AI_PROVIDER=fake pnpm test:e2e
 ```
-
-The repository requires Node.js 24. Running these commands on older Node versions may emit engine warnings.
 
 ## Architecture
 
@@ -102,7 +114,7 @@ AI Flow Builder is a modular monolith:
 - `packages/flow-engine` contains deterministic node executors and flow execution.
 - `packages/ai` contains provider-neutral AI contracts, fake/disabled providers, OpenAI adapter, FlowPlan schema, and prompts.
 - `packages/db` contains Drizzle schema and repository implementations.
-- `packages/codegen` is reserved for deterministic TypeScript generation.
+- `packages/codegen` contains deterministic TypeScript generation.
 
 Important boundaries:
 
@@ -112,12 +124,32 @@ Important boundaries:
 - LLM output is treated as untrusted and must pass schema and graph validation.
 - Generated code is for display, copy, or download only. The app does not execute generated code.
 
-## Security and Deployment Notes
+## Limitations
 
-The MVP has no authentication, multi-user workspace, RBAC, or sharing model. Do not expose it directly to the public internet without adding an authentication layer.
+- The MVP is single-user and has no authentication, workspace, RBAC, sharing, comments, or collaboration.
+- Flows must be DAGs. Loops, branching, scheduling, queues, retries, long-running jobs, and deployment workflows are out of scope.
+- The only built-in node data type currently exercised is text.
+- The app does not include JavaScript, Python, shell, HTTP request, database query, file system, browser automation, MCP, or agent tool nodes.
+- The GitHub Pages playground is a static browser demo and is not a replacement for the full local or Docker app.
 
-AI prompts and flow inputs may be sent to the configured AI provider when AI features are enabled. Use `AI_PROVIDER=disabled` for no external AI calls, or `AI_PROVIDER=fake` for deterministic local testing.
+## Roadmap
+
+- Flow JSON import/export.
+- Flow revision history.
+- Authentication and workspaces.
+- PostgreSQL adapter.
+- Conditional nodes and broader port types.
+- Execution history and asynchronous jobs.
+- Compile-time plugin authoring.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, scope, quality gates, and pull request expectations. This project follows the conduct expectations in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for supported security expectations, private reporting guidance, and MVP deployment warnings.
 
 ## License
 
-Apache-2.0 is the intended repository license for the MVP. The license file will be added as part of the OSS release-preparation tasks.
+Apache-2.0. See [LICENSE](LICENSE).

@@ -7,6 +7,7 @@ export const DEFAULT_LAYOUT_Y_SPACING = 160;
 export interface LayoutOptions {
   readonly xSpacing?: number;
   readonly ySpacing?: number;
+  readonly sortKeyByNodeId?: (nodeId: string) => string;
 }
 
 export const layoutFlowGraph = (
@@ -21,6 +22,7 @@ export const layoutFlowGraph = (
     depthByNodeId,
     xSpacing,
     ySpacing,
+    sortKeyByNodeId: options.sortKeyByNodeId,
   });
 
   return {
@@ -102,11 +104,13 @@ const calculatePositions = ({
   depthByNodeId,
   xSpacing,
   ySpacing,
+  sortKeyByNodeId,
 }: {
   readonly graph: FlowGraph;
   readonly depthByNodeId: ReadonlyMap<string, number>;
   readonly xSpacing: number;
   readonly ySpacing: number;
+  readonly sortKeyByNodeId: ((nodeId: string) => string) | undefined;
 }): ReadonlyMap<string, { readonly x: number; readonly y: number }> => {
   const nodeIdsByDepth = new Map<number, string[]>();
   for (const node of graph.nodes) {
@@ -120,7 +124,9 @@ const calculatePositions = ({
   const sortedDepths = [...nodeIdsByDepth.keys()].sort((a, b) => a - b);
 
   for (const depth of sortedDepths) {
-    const nodeIds = [...(nodeIdsByDepth.get(depth) ?? [])].sort();
+    const nodeIds = [...(nodeIdsByDepth.get(depth) ?? [])].sort((left, right) =>
+      compareNodeIds(left, right, sortKeyByNodeId),
+    );
 
     for (const [index, nodeId] of nodeIds.entries()) {
       positionedByNodeId.set(nodeId, {
@@ -131,6 +137,18 @@ const calculatePositions = ({
   }
 
   return normalizePositions(positionedByNodeId);
+};
+
+const compareNodeIds = (
+  left: string,
+  right: string,
+  sortKeyByNodeId: ((nodeId: string) => string) | undefined,
+): number => {
+  const leftKey = sortKeyByNodeId?.(left) ?? left;
+  const rightKey = sortKeyByNodeId?.(right) ?? right;
+  const keyComparison = leftKey.localeCompare(rightKey);
+
+  return keyComparison === 0 ? left.localeCompare(right) : keyComparison;
 };
 
 const normalizePositions = (

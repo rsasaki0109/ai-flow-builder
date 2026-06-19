@@ -16,6 +16,8 @@
     "test:unit": "vitest run --config ../../vitest.config.ts"
   },
   "dependencies": {
-    "@ai-flow-builder/flow-core": "workspace:*"
+    "@ai-flow-builder/flow-core": "workspace:*",
+    "openai": "6.44.0",
+    "zod": "4.4.3"
   }
 }
