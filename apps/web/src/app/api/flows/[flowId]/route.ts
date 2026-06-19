@@ -4,14 +4,13 @@ import {
 } from "@ai-flow-builder/flow-core";
 import { z } from "zod";
 import { getServerContainer } from "../../../../server/container.js";
-import { errorResponse } from "../../../../server/http/error-mapper.js";
+import { handleApiRoute } from "../../../../server/http/handler.js";
 import {
   parseJsonRequest,
   parseUuidPathParam,
 } from "../../../../server/http/request.js";
 import {
   emptyResponse,
-  resolveRequestId,
   successResponse,
 } from "../../../../server/http/response.js";
 
@@ -34,55 +33,76 @@ export async function GET(
   request: Request,
   context: FlowRouteContext,
 ): Promise<Response> {
-  const requestId = resolveRequestId(request.headers);
+  const container = getServerContainer();
 
-  try {
-    const flowId = await parseFlowId(context);
-    const flow = await getServerContainer().flowService.get(flowId);
+  return handleApiRoute(
+    request,
+    {
+      route: "/api/flows/[flowId]",
+      operation: "get_flow",
+      logger: container.logger,
+    },
+    async ({ requestId, setLogFields }) => {
+      const flowId = await parseFlowId(context);
+      setLogFields({ flowId });
+      const flow = await container.flowService.get(flowId);
 
-    return successResponse(flow, { requestId });
-  } catch (error) {
-    return errorResponse(error, requestId);
-  }
+      return successResponse(flow, { requestId });
+    },
+  );
 }
 
 export async function PUT(
   request: Request,
   context: FlowRouteContext,
 ): Promise<Response> {
-  const requestId = resolveRequestId(request.headers);
+  const container = getServerContainer();
 
-  try {
-    const flowId = await parseFlowId(context);
-    const body = await parseJsonRequest(request, updateFlowRequestSchema);
-    const flow = await getServerContainer().flowService.update({
-      id: flowId,
-      expectedRevision: body.expectedRevision,
-      name: body.name,
-      description: body.description,
-      graph: body.graph,
-    });
+  return handleApiRoute(
+    request,
+    {
+      route: "/api/flows/[flowId]",
+      operation: "update_flow",
+      logger: container.logger,
+    },
+    async ({ requestId, setLogFields }) => {
+      const flowId = await parseFlowId(context);
+      setLogFields({ flowId });
+      const body = await parseJsonRequest(request, updateFlowRequestSchema);
+      const flow = await container.flowService.update({
+        id: flowId,
+        expectedRevision: body.expectedRevision,
+        name: body.name,
+        description: body.description,
+        graph: body.graph,
+      });
 
-    return successResponse(flow, { requestId });
-  } catch (error) {
-    return errorResponse(error, requestId);
-  }
+      return successResponse(flow, { requestId });
+    },
+  );
 }
 
 export async function DELETE(
   request: Request,
   context: FlowRouteContext,
 ): Promise<Response> {
-  const requestId = resolveRequestId(request.headers);
+  const container = getServerContainer();
 
-  try {
-    const flowId = await parseFlowId(context);
-    await getServerContainer().flowService.delete(flowId);
+  return handleApiRoute(
+    request,
+    {
+      route: "/api/flows/[flowId]",
+      operation: "delete_flow",
+      logger: container.logger,
+    },
+    async ({ requestId, setLogFields }) => {
+      const flowId = await parseFlowId(context);
+      setLogFields({ flowId });
+      await container.flowService.delete(flowId);
 
-    return emptyResponse(204, requestId);
-  } catch (error) {
-    return errorResponse(error, requestId);
-  }
+      return emptyResponse(204, requestId);
+    },
+  );
 }
 
 async function parseFlowId(context: FlowRouteContext): Promise<string> {

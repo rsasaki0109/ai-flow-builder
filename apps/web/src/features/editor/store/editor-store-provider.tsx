@@ -36,11 +36,15 @@ export function EditorStoreProvider({
 export function useEditorStore<TSelected>(
   selector: (store: EditorStore) => TSelected,
 ): TSelected {
+  return useStore(useEditorStoreApi(), selector);
+}
+
+export function useEditorStoreApi(): EditorStoreApi {
   const store = useContext(EditorStoreContext);
 
   if (store === null) {
     throw new Error("useEditorStore must be used inside EditorStoreProvider.");
   }
 
-  return useStore(store, selector);
+  return store;
 }

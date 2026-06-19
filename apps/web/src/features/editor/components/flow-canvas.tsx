@@ -25,10 +25,12 @@ export function FlowCanvas() {
   const graph = useEditorStore((store) => store.graph);
   const selectedEdgeId = useEditorStore((store) => store.selectedEdgeId);
   const selectedNodeId = useEditorStore((store) => store.selectedNodeId);
+  const beginNodeDrag = useEditorStore((store) => store.beginNodeDrag);
   const selectEdge = useEditorStore((store) => store.selectEdge);
   const selectNode = useEditorStore((store) => store.selectNode);
   const clearSelection = useEditorStore((store) => store.clearSelection);
   const connect = useEditorStore((store) => store.connect);
+  const endNodeDrag = useEditorStore((store) => store.endNodeDrag);
   const moveNode = useEditorStore((store) => store.moveNode);
   const removeEdges = useEditorStore((store) => store.removeEdges);
   const removeNodes = useEditorStore((store) => store.removeNodes);
@@ -140,6 +142,12 @@ export function FlowCanvas() {
           onNodesChange={handleNodesChange}
           onNodeClick={(_event, node) => {
             selectNode(node.id);
+          }}
+          onNodeDragStart={() => {
+            beginNodeDrag();
+          }}
+          onNodeDragStop={() => {
+            endNodeDrag();
           }}
           onPaneClick={() => {
             clearSelection();

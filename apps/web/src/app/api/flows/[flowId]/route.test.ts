@@ -11,7 +11,10 @@ import {
 } from "@ai-flow-builder/flow-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AppConfig } from "../../../../server/config.js";
-import { setServerContainerForTest } from "../../../../server/container.js";
+import {
+  createServerContainer,
+  setServerContainerForTest,
+} from "../../../../server/container.js";
 import { FlowService } from "../../../../server/services/flow-service.js";
 import { DELETE, GET, PUT } from "./route.js";
 
@@ -23,12 +26,13 @@ let repository: InMemoryFlowRepository;
 
 beforeEach(() => {
   repository = new InMemoryFlowRepository();
-  setServerContainerForTest({
-    config: createConfig(),
-    flowRepository: repository,
-    flowService: new FlowService(repository),
-    dispose: () => undefined,
-  });
+  setServerContainerForTest(
+    createServerContainer({
+      config: createConfig(),
+      flowRepository: repository,
+      flowService: new FlowService(repository),
+    }),
+  );
 });
 
 afterEach(() => {

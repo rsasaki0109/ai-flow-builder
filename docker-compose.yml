@@ -1,0 +1,24 @@
+services:
+  web:
+    image: ai-flow-builder:local
+    build:
+      context: .
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      APP_ROOT: /app
+      DATABASE_URL: file:/app/data/ai-flow-builder.db
+      AI_PROVIDER: ${AI_PROVIDER:-disabled}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      AI_REQUEST_TIMEOUT_MS: ${AI_REQUEST_TIMEOUT_MS:-45000}
+      FLOW_RUN_TIMEOUT_MS: ${FLOW_RUN_TIMEOUT_MS:-60000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PORT: 3000
+    volumes:
+      - ai-flow-builder-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  ai-flow-builder-data:

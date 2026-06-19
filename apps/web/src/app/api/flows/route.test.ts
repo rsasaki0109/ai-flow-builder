@@ -6,12 +6,17 @@ import type {
 } from "@ai-flow-builder/db";
 import {
   FLOW_GRAPH_SCHEMA_VERSION,
+  MAX_TEMPLATE_LENGTH,
   type FlowGraph,
+  type FlowNode,
   type FlowResource,
 } from "@ai-flow-builder/flow-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AppConfig } from "../../../server/config.js";
-import { setServerContainerForTest } from "../../../server/container.js";
+import {
+  createServerContainer,
+  setServerContainerForTest,
+} from "../../../server/container.js";
 import { FlowService } from "../../../server/services/flow-service.js";
 import { GET, POST } from "./route.js";
 
@@ -22,12 +27,13 @@ let repository: InMemoryFlowRepository;
 
 beforeEach(() => {
   repository = new InMemoryFlowRepository();
-  setServerContainerForTest({
-    config: createConfig(),
-    flowRepository: repository,
-    flowService: new FlowService(repository, { createId: () => FLOW_ID }),
-    dispose: () => undefined,
-  });
+  setServerContainerForTest(
+    createServerContainer({
+      config: createConfig(),
+      flowRepository: repository,
+      flowService: new FlowService(repository, { createId: () => FLOW_ID }),
+    }),
+  );
 });
 
 afterEach(() => {
@@ -98,6 +104,24 @@ describe("/api/flows route", () => {
           ...createEmptyGraph(),
           viewport: { x: 0, y: 0, zoom: 99 },
         },
+      }),
+    );
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({
+      error: {
+        code: "INVALID_FLOW_DOCUMENT",
+        requestId: REQUEST_ID,
+      },
+    });
+  });
+
+  it("returns 422 when a template config exceeds the storage limit", async () => {
+    const response = await POST(
+      jsonRequest("http://localhost/api/flows", {
+        name: "Oversized Template",
+        description: null,
+        graph: createTemplateGraph("x".repeat(MAX_TEMPLATE_LENGTH + 1)),
       }),
     );
 
@@ -220,5 +244,25 @@ function createEmptyGraph(): FlowGraph {
     nodes: [],
     edges: [],
     viewport: { x: 0, y: 0, zoom: 1 },
+  };
+}
+
+function createTemplateGraph(template: string): FlowGraph {
+  return {
+    ...createEmptyGraph(),
+    nodes: [templateNode(template)],
+  };
+}
+
+function templateNode(template: string): FlowNode {
+  return {
+    id: "10000000-0000-4000-8000-000000000101",
+    kind: "core.text.template",
+    specVersion: 1,
+    position: { x: 0, y: 0 },
+    label: "Text Template",
+    config: {
+      template,
+    },
   };
 }

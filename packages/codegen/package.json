@@ -15,7 +15,11 @@
     "test": "vitest run --config ../../vitest.config.ts",
     "test:unit": "vitest run --config ../../vitest.config.ts"
   },
+  "devDependencies": {
+    "@types/node": "24.13.2"
+  },
   "dependencies": {
-    "@ai-flow-builder/flow-core": "workspace:*"
+    "@ai-flow-builder/flow-core": "workspace:*",
+    "prettier": "3.8.4"
   }
 }

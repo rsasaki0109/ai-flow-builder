@@ -4,7 +4,7 @@ import type {
   FlowResource,
 } from "@ai-flow-builder/flow-core";
 import { describe, expect, it } from "vitest";
-import { createEditorStore } from "./editor-store.js";
+import { createEditorStore, MAX_HISTORY_SNAPSHOTS } from "./editor-store.js";
 
 describe("createEditorStore", () => {
   it("loads the initial FlowResource into isolated editor state", () => {
@@ -25,6 +25,8 @@ describe("createEditorStore", () => {
     expect(store.getState().saveStatus).toBe("saved");
     expect(store.getState().dirty).toBe(false);
     expect(store.getState().graph.nodes).toHaveLength(1);
+    expect(store.getState().history.past).toHaveLength(0);
+    expect(store.getState().history.future).toHaveLength(0);
   });
 
   it("marks metadata updates dirty without replacing the graph", () => {
@@ -39,6 +41,7 @@ describe("createEditorStore", () => {
     expect(store.getState().dirty).toBe(true);
     expect(store.getState().saveStatus).toBe("dirty");
     expect(store.getState().graph).toBe(initialGraph);
+    expect(store.getState().history.past).toHaveLength(0);
   });
 
   it("adds, moves, configures, labels, and selects nodes immutably", () => {
@@ -139,6 +142,114 @@ describe("createEditorStore", () => {
     expect(store.getState().selectedEdgeId).toBeNull();
   });
 
+  it("undoes and redoes graph edits while leaving metadata out of history", () => {
+    const store = createEditorStore(createFlowResource(), {
+      createId: createQueuedIdFactory(["10000000-0000-4000-8000-000000000601"]),
+    });
+
+    store.getState().setName("Metadata Only");
+    expect(store.getState().history.past).toHaveLength(0);
+
+    const nodeId = store
+      .getState()
+      .addNode("core.input.text", { x: 10, y: 20 });
+    store.getState().updateNodeConfig(nodeId, {
+      key: "topic",
+      label: "Topic",
+      required: false,
+    });
+    store.getState().updateNodeConfig(nodeId, {
+      key: "topic",
+      label: "Topic",
+      required: false,
+    });
+
+    expect(store.getState().history.past).toHaveLength(2);
+    expect(store.getState().graph.nodes[0]?.config).toMatchObject({
+      key: "topic",
+    });
+
+    store.getState().undo();
+    expect(store.getState().graph.nodes[0]?.config).toMatchObject({
+      key: "input",
+    });
+    expect(store.getState().history.future).toHaveLength(1);
+
+    store.getState().undo();
+    expect(store.getState().graph.nodes).toHaveLength(0);
+    expect(store.getState().history.future).toHaveLength(2);
+
+    store.getState().redo();
+    expect(store.getState().graph.nodes).toHaveLength(1);
+    expect(store.getState().graph.nodes[0]?.config).toMatchObject({
+      key: "input",
+    });
+
+    store.getState().redo();
+    expect(store.getState().graph.nodes[0]?.config).toMatchObject({
+      key: "topic",
+    });
+  });
+
+  it("coalesces node drag moves into one history snapshot", () => {
+    const nodeId = "10000000-0000-4000-8000-000000000701";
+    const store = createEditorStore(
+      createFlowResource({
+        graph: {
+          ...createEmptyGraph(),
+          nodes: [createTextInputNode(nodeId)],
+        },
+      }),
+    );
+
+    store.getState().beginNodeDrag();
+    store.getState().moveNode(nodeId, { x: 10, y: 20 });
+    store.getState().moveNode(nodeId, { x: 30, y: 40 });
+
+    expect(store.getState().graph.nodes[0]?.position).toEqual({
+      x: 30,
+      y: 40,
+    });
+    expect(store.getState().history.past).toHaveLength(0);
+
+    store.getState().endNodeDrag();
+
+    expect(store.getState().history.past).toHaveLength(1);
+    expect(store.getState().history.past[0]?.nodes[0]?.position).toEqual({
+      x: 0,
+      y: 0,
+    });
+
+    store.getState().undo();
+    expect(store.getState().graph.nodes[0]?.position).toEqual({
+      x: 0,
+      y: 0,
+    });
+  });
+
+  it("caps undo history at the configured maximum", () => {
+    const ids = Array.from(
+      { length: MAX_HISTORY_SNAPSHOTS + 5 },
+      (_, index) =>
+        `10000000-0000-4000-8000-${String(index + 800).padStart(12, "0")}`,
+    );
+    const store = createEditorStore(createFlowResource(), {
+      createId: createQueuedIdFactory(ids),
+    });
+
+    for (let index = 0; index < ids.length; index += 1) {
+      store.getState().addNode("core.input.text", { x: index, y: index });
+    }
+
+    expect(store.getState().history.past).toHaveLength(MAX_HISTORY_SNAPSHOTS);
+
+    for (let index = 0; index < MAX_HISTORY_SNAPSHOTS; index += 1) {
+      store.getState().undo();
+    }
+
+    expect(store.getState().graph.nodes).toHaveLength(5);
+  });
+
   it("tracks save lifecycle and applies saved resources", () => {
     const store = createEditorStore(createFlowResource());
 
@@ -164,6 +275,58 @@ describe("createEditorStore", () => {
     expect(store.getState().conflictRevision).toBeNull();
   });
 
+  it("applies autosave results without overwriting newer local graph changes", () => {
+    const nodeId = "10000000-0000-4000-8000-000000000901";
+    const initialFlow = createFlowResource({
+      graph: {
+        ...createEmptyGraph(),
+        nodes: [createTextInputNode(nodeId)],
+      },
+    });
+    const store = createEditorStore(initialFlow);
+
+    store.getState().updateNodeLabel(nodeId, "Saved Label");
+    const savedSnapshot = {
+      description: store.getState().description,
+      graph: store.getState().graph,
+      name: store.getState().name,
+    };
+
+    store.getState().markSaving();
+    store.getState().updateNodeLabel(nodeId, "Local Newer Label");
+    store.getState().applyAutosaveResult(
+      createFlowResource({
+        graph: savedSnapshot.graph,
+        revision: 4,
+      }),
+      savedSnapshot,
+    );
+
+    expect(store.getState().serverRevision).toBe(4);
+    expect(store.getState().dirty).toBe(true);
+    expect(store.getState().saveStatus).toBe("dirty");
+    expect(store.getState().graph.nodes[0]?.label).toBe("Local Newer Label");
+
+    const latestSnapshot = {
+      description: store.getState().description,
+      graph: store.getState().graph,
+      name: store.getState().name,
+    };
+    store.getState().markSaving();
+    store.getState().applyAutosaveResult(
+      createFlowResource({
+        graph: latestSnapshot.graph,
+        revision: 5,
+      }),
+      latestSnapshot,
+    );
+
+    expect(store.getState().serverRevision).toBe(5);
+    expect(store.getState().dirty).toBe(false);
+    expect(store.getState().saveStatus).toBe("saved");
+    expect(store.getState().graph.nodes[0]?.label).toBe("Local Newer Label");
+  });
+
   it("replaces graph and viewport using cloned graph values", () => {
     const store = createEditorStore(createFlowResource());
     const replacement = {
@@ -183,6 +346,48 @@ describe("createEditorStore", () => {
     });
     expect(store.getState().selectedNodeId).toBeNull();
     expect(store.getState().selectedEdgeId).toBeNull();
+  });
+
+  it("applies an AI draft as one graph history snapshot and can undo it", () => {
+    const originalNodeId = "10000000-0000-4000-8000-000000000101";
+    const generatedNodeId = "10000000-0000-4000-8000-000000000501";
+    const store = createEditorStore(
+      createFlowResource({
+        graph: {
+          ...createEmptyGraph(),
+          nodes: [createTextInputNode(originalNodeId)],
+        },
+      }),
+    );
+
+    store.getState().selectNode(originalNodeId);
+    store.getState().replaceGraphFromAi({
+      graph: {
+        ...createEmptyGraph(),
+        nodes: [createTextInputNode(generatedNodeId)],
+      },
+    });
+
+    expect(store.getState().dirty).toBe(true);
+    expect(store.getState().saveStatus).toBe("dirty");
+    expect(store.getState().graph.nodes.map((node) => node.id)).toEqual([
+      generatedNodeId,
+    ]);
+    expect(store.getState().history.past).toHaveLength(1);
+    expect(
+      store.getState().history.past[0]?.nodes.map((node) => node.id),
+    ).toEqual([originalNodeId]);
+    expect(store.getState().selectedNodeId).toBeNull();
+    expect(store.getState().selectedEdgeId).toBeNull();
+
+    store.getState().undo();
+
+    expect(store.getState().graph.nodes.map((node) => node.id)).toEqual([
+      originalNodeId,
+    ]);
+    expect(store.getState().history.future).toHaveLength(1);
+    expect(store.getState().dirty).toBe(true);
+    expect(store.getState().saveStatus).toBe("dirty");
   });
 });
 

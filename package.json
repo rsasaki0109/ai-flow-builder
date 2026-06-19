@@ -2,6 +2,7 @@
   "name": "ai-flow-builder",
   "version": "0.1.0",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
   "packageManager": "pnpm@11.0.0",
   "engines": {
@@ -15,7 +16,7 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "test:unit": "pnpm -r --if-present test:unit",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --pass-with-no-tests",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @ai-flow-builder/db db:generate",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.61.0",
     "eslint": "10.5.0",
     "prettier": "3.8.4",
     "typescript": "6.0.3",

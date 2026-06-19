@@ -1,20 +1,22 @@
 import type { FlowRepository } from "@ai-flow-builder/db";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AppConfig } from "../../../server/config.js";
-import { setServerContainerForTest } from "../../../server/container.js";
-import { FlowService } from "../../../server/services/flow-service.js";
+import {
+  createServerContainer,
+  setServerContainerForTest,
+} from "../../../server/container.js";
 import { GET } from "./route.js";
 
 const REQUEST_ID = "20000000-0000-4000-8000-000000000001";
 
 beforeEach(() => {
   const flowRepository = createFakeFlowRepository();
-  setServerContainerForTest({
-    config: createConfig(),
-    flowRepository,
-    flowService: new FlowService(flowRepository),
-    dispose: () => undefined,
-  });
+  setServerContainerForTest(
+    createServerContainer({
+      config: createConfig(),
+      flowRepository,
+    }),
+  );
 });
 
 afterEach(() => {
@@ -23,7 +25,7 @@ afterEach(() => {
 
 describe("/api/health route", () => {
   it("returns configured health without calling the AI provider", async () => {
-    const response = GET(
+    const response = await GET(
       new Request("http://localhost/api/health", {
         headers: { "x-request-id": REQUEST_ID },
       }),

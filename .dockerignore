@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnp.*
+
+# Build outputs
+.next/
+**/.next/
+out/
+**/out/
+dist/
+**/dist/
+build/
+**/build/
+coverage/
+**/coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Local runtime state
+data/*
+*.db
+*.db-*
+
+# Environment and VCS
+.env
+.env.*
+!.env.example
+.git/
+.github/
+
+# Logs and editor files
+*.log
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
