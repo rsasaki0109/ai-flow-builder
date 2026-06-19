@@ -21,12 +21,14 @@ jobs:
     env:
       AI_PROVIDER: fake
       APP_ROOT: ${{ github.workspace }}
-      DATABASE_URL: file:${{ runner.temp }}/ai-flow-builder-ci.db
       LOG_LEVEL: silent
       CI: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Configure CI database
+        run: echo "DATABASE_URL=file:${GITHUB_WORKSPACE}/data/ai-flow-builder-ci.db" >> "$GITHUB_ENV"
 
       - name: Enable Corepack
         run: corepack enable
